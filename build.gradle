@@ -1,0 +1,105 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven{
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:7.0.4"
+
+        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7"
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.29.2"
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+
+}
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id 'com.android.application' version '8.0.0' apply false
+    id 'com.android.library' version '8.0.0' apply false
+}
+
+allprojects {
+    apply plugin: 'com.jfrog.artifactory'
+    apply plugin: 'maven-publish'
+}
+
+project('app') {
+    artifactoryPublish.dependsOn('build')
+    publishing {
+        publications {
+            app(MavenPublication) {
+                // from components.java
+                groupId = group
+                artifactId = project.getName()
+                artifact("$buildDir/apk_outputs.zip")
+            }
+        }
+    }
+
+    artifactoryPublish {
+        publications(publishing.publications.app)
+    }
+}
+
+artifactory {
+    clientConfig.setIncludeEnvVars(true)
+    clientConfig.info.addEnvironmentProperty('test.adding.dynVar',new Date().toString())
+
+    contextUrl = 'http://10.255.115.83:8082/artifactory'
+    publish {
+        repository {
+            repoKey = "ac-charger" // The Artifactory repository key to publish to
+            username = "admin" // The publisher user name
+            password = "Pega1234@" // The publisher password
+        }
+        defaults {
+            publications('apk')
+            // Reference to Gradle publications defined in the build script.
+            // This is how we tell the Artifactory Plugin which artifacts should be
+            // published to Artifactory.
+            publishArtifacts = true
+            // Properties to be attached to the published artifacts.
+            properties = ['qa.level': 'basic', 'q.os'    : 'android', 'dev.team' : 'core']
+            publishPom = false // Publish generated POM files to Artifactory (true by default)
+            publishIvy = false
+        }
+    }
+}
+
+
+
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+apply plugin: "org.sonarqube"
+
+sonarqube {
+//    properties {
+//        property "sonar.host.url", "http://localhost:9000"
+//        property "sonar.login", "6c5609b6389c4ee0b85e527b218e4482c44355aa"
+//        property "sonar.password", "eden1234"
+//        property "sonar.sourceEncoding", "UTF-8"
+//        property "sonar.projectKey", "android_hellow_world"
+//        property "sonar.source", "src/main/java"
+//        property "sonar.projectVersion",project.version
+//        property "sonar.java.binaries","build/inermediates/javac/intranetDebug/classes"
+//    }
+
+    properties {
+        property "sonar.host.url", "http://172.18.255.55:9001/"
+        property "sonar.login", "admin"
+        property "sonar.password", "pega1234"
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.projectKey", "JenkinBuildTest"
+        property "sonar.source", "src/main/java"
+        property "sonar.projectVersion",project.version
+        property "sonar.java.binaries","build/inermediates/javac/intranetDebug/classes"
+    }
+}
